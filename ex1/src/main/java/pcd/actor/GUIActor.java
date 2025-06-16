@@ -8,23 +8,17 @@ import pcd.view.*;
 import javax.swing.*;
 import javax.swing.event.*;
 import java.util.*;
-import java.awt.*;
 
 public class GUIActor implements ChangeListener {
     private final ActorRef<ManagerProtocol.Command> managerActor;
     private final BoidsParams boidsParams;
 
-    private JFrame frame;
-    private BoidsPanel boidsPanel;
-    private JSlider cohesionSlider, separationSlider, alignmentSlider;
-    private JButton resumeButton, pauseButton, stopButton;
-    private JLabel statusLabel;
+    private BoidsGUI gui;
     private boolean isPaused = false;
     private boolean isRunning = false;
     private boolean waitingForConfirmation = false;
 
-    private GUIActor(BoidsParams boidsParams,
-                     ActorRef<ManagerProtocol.Command> managerActor) {
+    private GUIActor(BoidsParams boidsParams, ActorRef<ManagerProtocol.Command> managerActor) {
         this.boidsParams = boidsParams;
         this.managerActor = managerActor;
 
@@ -32,144 +26,46 @@ public class GUIActor implements ChangeListener {
     }
 
     private void showInitialDialog() {
-        JFrame parentFrame = (frame != null) ? frame : new JFrame();
-        if (frame == null) {
-            parentFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        }
+        JFrame parentFrame = new JFrame();
+        parentFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         InitialDialog dialog = new InitialDialog(parentFrame);
         if (dialog.showDialog()) {
             int nBoids = dialog.getNBoids();
+            parentFrame.dispose();
 
-            if(frame == null) {
-                parentFrame.dispose();
-            }
-
-            // Create main GUI
-            if (frame == null) {
-                this.createMainGUI(nBoids);
-            } else {
-                updateGUIForRestart(nBoids);
-            }
-
-            // Tell the manager to start simulation
+            SwingUtilities.invokeLater(() -> createMainGUI(nBoids));
             managerActor.tell(new ManagerProtocol.StartSimulation(
                     nBoids,
                     boidsParams.getWidth(),
                     boidsParams.getHeight()
             ));
-
-            SwingUtilities.invokeLater(() -> statusLabel.setText("Status: " + GUIProtocol.SimulationStatus.STARTING.getDisplayText()));
-
             isRunning = true;
             isPaused = false;
             updateButtonStates();
         } else {
-            if (frame == null) {
-                System.exit(0);
-            }
+            System.exit(0);
         }
     }
 
     private void createMainGUI(int nBoids) {
-        final int envWidth = (int) Math.round(boidsParams.getWidth());
-        final int envHeight = (int) Math.round(boidsParams.getHeight());
-
-        frame = new JFrame("Boids Simulation");
-        frame.setSize((int) Math.round(boidsParams.getWidth()),(int) Math.round(boidsParams.getHeight()));
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        JPanel mainPanel = new JPanel(new BorderLayout());
-
-        this.boidsPanel = new BoidsPanel(envWidth, envHeight, nBoids, new ArrayList<>());
-        mainPanel.add(BorderLayout.CENTER, boidsPanel);
-
-        JPanel cpTop = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
-        cpTop.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        cpTop.setBorder(BorderFactory.createTitledBorder("Simulation Controls"));
-
-        Dimension buttonSize = new Dimension(85, 25);
-        resumeButton = new JButton("Resume");
-        resumeButton.setPreferredSize(buttonSize);
-        pauseButton = new JButton("Pause");
-        pauseButton.setPreferredSize(buttonSize);
-        stopButton = new JButton("Stop");
-        stopButton.setPreferredSize(buttonSize);
-
-        statusLabel = new JLabel("Status: Starting...");
-        statusLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
-
-        resumeButton.addActionListener(e -> onPauseResume());
-        pauseButton.addActionListener(e -> onPauseResume());
-        stopButton.addActionListener(e -> onStop());
-
-        cpTop.add(resumeButton);
-        cpTop.add(pauseButton);
-        cpTop.add(stopButton);
-        cpTop.add(Box.createHorizontalStrut(10));
-        cpTop.add(statusLabel);
-
-        mainPanel.add(BorderLayout.NORTH, cpTop);
-
-        JPanel slidersPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        slidersPanel.setBorder(BorderFactory.createTitledBorder("Parameters"));
-
-        Dimension sliderSize = new Dimension(100, 30);
-
-        cohesionSlider = makeSlider();
-        cohesionSlider.setPreferredSize(sliderSize);
-        separationSlider = makeSlider();
-        separationSlider.setPreferredSize(sliderSize);
-        alignmentSlider = makeSlider();
-        alignmentSlider.setPreferredSize(sliderSize);
-
-        slidersPanel.add(new JLabel("  Cohesion:"));
-        slidersPanel.add(cohesionSlider);
-        slidersPanel.add(new JLabel("  Separation:"));
-        slidersPanel.add(separationSlider);
-        slidersPanel.add(new JLabel("  Alignment:"));
-        slidersPanel.add(alignmentSlider);
-
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
-        bottomPanel.add(slidersPanel);
-
-        mainPanel.add(BorderLayout.SOUTH, bottomPanel);
-
-        frame.setContentPane(mainPanel);
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-
+        gui = new BoidsGUI(
+            (int) boidsParams.getWidth(),
+            (int) boidsParams.getHeight(),
+            nBoids,
+            action -> onPauseResume(),
+            action -> onStop(),
+            this
+        );
         updateButtonStates();
-    }
-
-    private void updateGUIForRestart(int nBoids) {
-        if(boidsPanel != null) {
-            boidsPanel.setNBoids(nBoids);
-            boidsPanel.updateBoids(new ArrayList<>());
-            boidsPanel.repaint();
-        }
     }
 
     private void updateButtonStates() {
         SwingUtilities.invokeLater(() -> {
-            if (this.pauseButton != null && this.resumeButton != null && this.stopButton != null) {
-                if (waitingForConfirmation) {
-                    this.pauseButton.setEnabled(false);
-                    this.resumeButton.setEnabled(false);
-                    this.stopButton.setEnabled(false);
-                } else if (!isRunning) {
-                    this.pauseButton.setEnabled(false);
-                    this.resumeButton.setEnabled(false);
-                    this.stopButton.setEnabled(false);
-                } else if (isPaused) {
-                    this.pauseButton.setEnabled(false);
-                    this.resumeButton.setEnabled(true);
-                    this.stopButton.setEnabled(true);
-                } else {
-                    this.pauseButton.setEnabled(true);
-                    this.resumeButton.setEnabled(false);
-                    this.stopButton.setEnabled(true);
-                }
+            if (gui != null) {
+                gui.getPauseButton().setEnabled(isRunning && !isPaused && !waitingForConfirmation);
+                gui.getResumeButton().setEnabled(isRunning && isPaused && !waitingForConfirmation);
+                gui.getStopButton().setEnabled(isRunning && !waitingForConfirmation);
             }
         });
     }
@@ -187,7 +83,7 @@ public class GUIActor implements ChangeListener {
     }
 
     private void onPauseResume() {
-        if(isRunning && !waitingForConfirmation) {
+        if (isRunning && !waitingForConfirmation) {
             setWaitingState(true);
             if (isPaused) {
                 managerActor.tell(new ManagerProtocol.ResumeSimulation());
@@ -218,116 +114,71 @@ public class GUIActor implements ChangeListener {
 
     private Behavior<GUIProtocol.Command> onRenderFrame(GUIProtocol.RenderFrame msg) {
         SwingUtilities.invokeLater(() -> {
-            if (boidsPanel != null) {
-                this.boidsPanel.updateBoids(msg.boids());
-                this.boidsPanel.setFrameRate(msg.metrics().fps());
-                this.boidsPanel.repaint();
+            if (gui != null) {
+                gui.getBoidsPanel().updateBoids(msg.boids());
             }
         });
         return Behaviors.same();
     }
 
     private Behavior<GUIProtocol.Command> onUpdateWeights(GUIProtocol.UpdateWeights msg) {
-        this.boidsParams.setSeparationWeight(msg.separationWeight());
-        this.boidsParams.setCohesionWeight(msg.cohesionWeight());
-        this.boidsParams.setAlignmentWeight(msg.alignmentWeight());
-
-        SwingUtilities.invokeLater(() ->
-                updateSlidersWithoutTriggering(
-                    msg.separationWeight(),
-                    msg.alignmentWeight(),
-                    msg.cohesionWeight()
-            )
-        );
-
+        SwingUtilities.invokeLater(() -> {
+            if (gui != null) {
+                gui.getCohesionSlider().setValue((int) (msg.cohesionWeight() * 10));
+                gui.getAlignmentSlider().setValue((int) (msg.alignmentWeight() * 10));
+                gui.getSeparationSlider().setValue((int) (msg.separationWeight() * 10));
+            }
+        });
         return Behaviors.same();
     }
 
     private Behavior<GUIProtocol.Command> onUpdateStatus(GUIProtocol.UpdateStatus msg) {
-        SwingUtilities.invokeLater(() -> statusLabel.setText("Status: " + msg.status().getDisplayText()));
+        SwingUtilities.invokeLater(() -> {
+            if (gui != null) {
+                gui.getStatusLabel().setText("Status: " + msg.status().toString());
+            }
+        });
         return Behaviors.same();
     }
 
     private Behavior<GUIProtocol.Command> onConfirmPause(GUIProtocol.ConfirmPause msg) {
+        isPaused = true;
         setWaitingState(false);
-        this.isPaused = true;
-        SwingUtilities.invokeLater(() -> statusLabel.setText("Status: " + GUIProtocol.SimulationStatus.PAUSED.getDisplayText()));
         updateButtonStates();
         return Behaviors.same();
     }
 
-    private Behavior<GUIProtocol.Command> onConfirmResume (GUIProtocol.ConfirmResume msg) {
+    private Behavior<GUIProtocol.Command> onConfirmResume(GUIProtocol.ConfirmResume msg) {
+        isPaused = false;
         setWaitingState(false);
-        this.isPaused = false;
-        SwingUtilities.invokeLater(() -> statusLabel.setText("Status: " + GUIProtocol.SimulationStatus.RESUMED.getDisplayText()));
         updateButtonStates();
         return Behaviors.same();
     }
 
-    private Behavior<GUIProtocol.Command> onConfirmStop(GUIProtocol.Command msg) {
+    private Behavior<GUIProtocol.Command> onConfirmStop(GUIProtocol.ConfirmStop msg) {
+        isRunning = false;
         setWaitingState(false);
-        this.isRunning = false;
-        this.isPaused = false;
-        SwingUtilities.invokeLater(() -> {
-            statusLabel.setText("Status: " + GUIProtocol.SimulationStatus.STOPPED.getDisplayText());
-            frame.dispose();
-        });
         updateButtonStates();
         return Behaviors.same();
     }
 
     private Behavior<GUIProtocol.Command> onConfirmParamsUpdate(GUIProtocol.ConfirmParamsUpdate msg) {
-        SwingUtilities.invokeLater(() -> {
-            cohesionSlider.setEnabled(true);
-            separationSlider.setEnabled(true);
-            alignmentSlider.setEnabled(true);
-        });
+        setWaitingState(false);
+        updateButtonStates();
         return Behaviors.same();
-    }
-
-    private void updateSlidersWithoutTriggering(double sep, double ali, double coh) {
-        if (separationSlider != null && alignmentSlider != null && cohesionSlider != null) {
-            separationSlider.removeChangeListener(this);
-            alignmentSlider.removeChangeListener(this);
-            cohesionSlider.removeChangeListener(this);
-
-            separationSlider.setValue((int)(sep * 10));
-            alignmentSlider.setValue((int)(ali * 10));
-            cohesionSlider.setValue((int)(coh * 10));
-
-            separationSlider.addChangeListener(this);
-            alignmentSlider.addChangeListener(this);
-            cohesionSlider.addChangeListener(this);
-        }
-    }
-
-    private JSlider makeSlider() {
-        var slider = new JSlider(JSlider.HORIZONTAL, 0, 20, 10);
-        slider.setMajorTickSpacing(10);
-        slider.setMinorTickSpacing(1);
-        slider.setPaintTicks(true);
-        slider.setPaintLabels(true);
-
-        Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
-        labelTable.put(0, new JLabel(("")));
-        labelTable.put(10, new JLabel(""));
-        slider.setLabelTable(labelTable);
-        
-        slider.addChangeListener(this);
-        return slider;
     }
 
     @Override
     public void stateChanged(ChangeEvent e) {
-        if (!waitingForConfirmation) {
-            double sep = separationSlider.getValue() * 0.1;
-            double coh = cohesionSlider.getValue() * 0.1;
-            double ali = alignmentSlider.getValue() * 0.1;
+        if (!waitingForConfirmation && gui != null) {
+            double sep = gui.getSeparationSlider().getValue() * 0.1;
+            double coh = gui.getCohesionSlider().getValue() * 0.1;
+            double ali = gui.getAlignmentSlider().getValue() * 0.1;
 
             SwingUtilities.invokeLater(() -> {
-                cohesionSlider.setEnabled(false);
-                separationSlider.setEnabled(false);
-                alignmentSlider.setEnabled(false);
+                gui.getCohesionSlider().setEnabled(false);
+                gui.getSeparationSlider().setEnabled(false);
+                gui.getAlignmentSlider().setEnabled(false);
             });
 
             managerActor.tell(new ManagerProtocol.UpdateParams(coh, ali, sep));

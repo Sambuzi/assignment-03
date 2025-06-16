@@ -28,6 +28,7 @@ public class BoidsPanel extends JPanel {
 
     public void updateBoids(List<BoidState> newBoids) {
         this.boids = new ArrayList<>(newBoids);
+        repaint();
     }
 
     public void setFrameRate(int framerate) {
