@@ -1,6 +1,6 @@
 package pcd.view;
 
-import pcd.actors.GUIActor;
+import pcd.actor.GUIActor;
 import pcd.model.BoidState;
 
 import javax.swing.*;
