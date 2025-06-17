@@ -8,6 +8,9 @@ public record V2d(double x,double y) {
     public V2d sum(V2d v){
         return new V2d(x+v.x,y+v.y);
     }
+    public V2d sub(V2d v){
+        return new V2d(x-v.x,y-v.y);
+    }
 
     public double abs(){
         return Math.sqrt(x*x+y*y);

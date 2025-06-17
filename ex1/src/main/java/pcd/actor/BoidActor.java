@@ -16,137 +16,94 @@ public class BoidActor {
     private V2d velocity;
     private BoidsParams params;
 
-    public BoidActor(String boidId, P2d initialPos, V2d initialVel, BoidsParams params,
+    public BoidActor(String boidId, P2d pos, V2d vel, BoidsParams params,
                      ActorRef<ManagerProtocol.Command> managerActor, ActorContext<BoidProtocol.Command> context) {
         this.boidId = boidId;
-        this.position = initialPos;
-        this.velocity = initialVel;
+        this.position = pos;
+        this.velocity = vel;
         this.params = params;
         this.context = context;
         this.managerActor = managerActor;
     }
 
-    public static Behavior<BoidProtocol.Command> create(String boidId, P2d initialPos, V2d initialVel,
+    public static Behavior<BoidProtocol.Command> create(String boidId, P2d pos, V2d vel,
                                                         BoidsParams params,
                                                         ActorRef<ManagerProtocol.Command> managerActor) {
-        return Behaviors.setup(context -> new BoidActor(boidId, initialPos, initialVel,
-                                                        params, managerActor, context).behavior());
+        return Behaviors.setup(ctx -> new BoidActor(boidId, pos, vel, params, managerActor, ctx).behavior());
     }
 
     private Behavior<BoidProtocol.Command> behavior() {
         return Behaviors.receive(BoidProtocol.Command.class)
             .onMessage(BoidProtocol.UpdateRequest.class, this::onUpdateRequest)
-            .onMessage(BoidProtocol.UpdateParams.class, this::onUpdateParams)
-            .onMessage(BoidProtocol.WaitUpdateRequest.class, this::onWaitUpdateRequest)
+            .onMessage(BoidProtocol.UpdateParams.class, msg -> { this.params = msg.params(); return Behaviors.same(); })
+            .onMessage(BoidProtocol.WaitUpdateRequest.class, msg -> Behaviors.same())
             .build();
     }
 
-    private Behavior<BoidProtocol.Command> onUpdateParams(BoidProtocol.UpdateParams params) {
-        this.params = params.params();
-        return Behaviors.same();
-    }
+    private Behavior<BoidProtocol.Command> onUpdateRequest(BoidProtocol.UpdateRequest req) {
+        var nearby = req.boids().stream()
+            .filter(b -> !b.id().equals(boidId) && position.distance(b.pos()) <= params.getPerceptionRadius())
+            .toList();
 
-    private Behavior<BoidProtocol.Command> onUpdateRequest(BoidProtocol.UpdateRequest request) {
-        List<BoidState> nearbyBoids = findNearby(request.boids());
+        V2d alignment = avgVector(nearby, BoidState::vel).sub(velocity).getNormalized();
+        P2d avgPos = avgPosition(nearby);
+        V2d cohesion = new V2d(avgPos.x() - position.x(), avgPos.y() - position.y()).getNormalized();
+        V2d separation = avgSeparation(nearby);
 
-        V2d separation = calculateSeparation(nearbyBoids);
-        V2d alignment = calculateAlignment(nearbyBoids);
-        V2d cohesion = calculateCohesion(nearbyBoids);
+        velocity = velocity
+            .sum(alignment.mul(params.getAlignmentWeight()))
+            .sum(separation.mul(params.getSeparationWeight()))
+            .sum(cohesion.mul(params.getCohesionWeight()));
 
-        this.velocity = velocity.sum(alignment.mul(params.getAlignmentWeight()))
-                .sum(separation.mul(params.getSeparationWeight()))
-                .sum(cohesion.mul(params.getCohesionWeight()));
+        if (velocity.abs() > params.getMaxSpeed())
+            velocity = velocity.getNormalized().mul(params.getMaxSpeed());
 
-        /* Limit speed to MAX_SPEED */
-        double speed = velocity.abs();
-
-        if (speed > params.getMaxSpeed()) {
-            this.velocity = velocity.getNormalized().mul(params.getMaxSpeed());
-        }
-
-        /* Update position */
-        this.position = position.sum(velocity);
-
-        /* environment wrap-around */
-        if (position.x() < params.getMinX()) position = position.sum(new V2d(params.getWidth(), 0));
-        if (position.x() >= params.getMaxX()) position = position.sum(new V2d(-params.getWidth(), 0));
-        if (position.y() < params.getMinY()) position = position.sum(new V2d(0, params.getHeight()));
-        if (position.y() >= params.getMaxY()) position = position.sum(new V2d(0, -params.getHeight()));
+        position = wrap(position.sum(velocity));
 
         managerActor.tell(new ManagerProtocol.BoidUpdated(position, velocity, boidId));
-        this.context.getSelf().tell(new BoidProtocol.WaitUpdateRequest(request.tick()));
-
+        context.getSelf().tell(new BoidProtocol.WaitUpdateRequest(req.tick()));
         return Behaviors.same();
     }
 
-    private Behavior<BoidProtocol.Command> onWaitUpdateRequest(BoidProtocol.WaitUpdateRequest msg) {
-        return Behaviors.receive(BoidProtocol.Command.class)
-                .onMessage(BoidProtocol.UpdateRequest.class, this::onUpdateRequest)
-                .onMessage(BoidProtocol.UpdateParams.class, this::onUpdateParams)
-                .onMessage(BoidProtocol.WaitUpdateRequest.class, this::onWaitUpdateRequest)
-                .build();
-    }
-
-    private List<BoidState> findNearby(List<BoidState> boids) {
-        return boids.stream()
-                .filter(other -> !other.id().equals(boidId)
-                        && position.distance(other.pos()) <= params.getPerceptionRadius())
-                .toList();
-    }
-
-    private V2d calculateAlignment(List<BoidState> nearbyBoids) {
-        double avgVx = 0;
-        double avgVy = 0;
-        if (!nearbyBoids.isEmpty()) {
-            for (BoidState other : nearbyBoids) {
-                V2d otherVel = other.vel();
-                avgVx += otherVel.x();
-                avgVy += otherVel.y();
-            }
-            avgVx /= nearbyBoids.size();
-            avgVy /= nearbyBoids.size();
-            return new V2d(avgVx - velocity.x(), avgVy - velocity.y()).getNormalized();
-        } else {
-            return new V2d(0, 0);
+    private P2d avgPosition(List<BoidState> boids) {
+        if (boids.isEmpty()) return position;
+        double x = 0, y = 0;
+        for (BoidState b : boids) {
+            x += b.pos().x();
+            y += b.pos().y();
         }
+        return new P2d(x / boids.size(), y / boids.size());
     }
 
-    private V2d calculateCohesion(List<BoidState> nearbyBoids) {
-        double centerX = 0;
-        double centerY = 0;
-        if (!nearbyBoids.isEmpty()) {
-            for (BoidState other: nearbyBoids) {
-                P2d otherPos = other.pos();
-                centerX += otherPos.x();
-                centerY += otherPos.y();
-            }
-            centerX /= nearbyBoids.size();
-            centerY /= nearbyBoids.size();
-            return new V2d(centerX - position.x(), centerY - position.y()).getNormalized();
-        } else {
-            return new V2d(0, 0);
+    private V2d avgVector(List<BoidState> boids, java.util.function.Function<BoidState, ? extends V2d> extractor) {
+        if (boids.isEmpty()) return new V2d(0, 0);
+        double x = 0, y = 0;
+        for (BoidState b : boids) {
+            V2d v = extractor.apply(b);
+            x += v.x(); y += v.y();
         }
+        return new V2d(x / boids.size(), y / boids.size());
     }
 
-    private V2d calculateSeparation(List<BoidState> nearbyBoids) {
-        double dx = 0;
-        double dy = 0;
-        int count = 0;
-        for (BoidState other: nearbyBoids) {
-            P2d otherPos = other.pos();
-            double distance = position.distance(otherPos);
-            if (distance < params.getAvoidRadius()) {
-                dx += position.x() - otherPos.x();
-                dy += position.y() - otherPos.y();
+    private V2d avgSeparation(List<BoidState> boids) {
+        double dx = 0, dy = 0; int count = 0;
+        for (BoidState b : boids) {
+            double dist = position.distance(b.pos());
+            if (dist < params.getAvoidRadius()) {
+                dx += position.x() - b.pos().x();
+                dy += position.y() - b.pos().y();
                 count++;
             }
         }
-        if (count > 0) {
-            dx /= count;
-            dy /= count;
-            return new V2d(dx, dy).getNormalized();
-        } else {
-            return new V2d(0, 0);
-        }
+        return count > 0 ? new V2d(dx / count, dy / count).getNormalized() : new V2d(0, 0);
+    }
+
+    private P2d wrap(P2d pos) {
+        double x = pos.x(), y = pos.y();
+        if (x < params.getMinX()) x += params.getWidth();
+        if (x >= params.getMaxX()) x -= params.getWidth();
+        if (y < params.getMinY()) y += params.getHeight();
+        if (y >= params.getMaxY()) y -= params.getHeight();
+        return new P2d(x, y);
     }
 }
