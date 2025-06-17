@@ -77,7 +77,7 @@ public class ManagerActor {
         guiActor.tell(new GUIProtocol.UpdateWeights(
             params.getSeparationWeight(), params.getAlignmentWeight(), params.getCohesionWeight()));
         guiActor.tell(new GUIProtocol.RenderFrame(
-            List.copyOf(boidStates.values()), new SimulationMetrics(cmd.nBoids(), FPS, TICK_MS)));
+            List.copyOf(boidStates.values()), new BoidsMetrics(cmd.nBoids(), FPS, TICK_MS)));
         guiActor.tell(new GUIProtocol.UpdateStatus(GUIProtocol.SimulationStatus.RUNNING));
 
         timers.startTimerAtFixedRate(new ManagerProtocol.Tick(), Duration.ofMillis(TICK_MS));
@@ -122,7 +122,7 @@ public class ManagerActor {
         if (guiActor != null) {
             guiActor.tell(new GUIProtocol.RenderFrame(
                 List.copyOf(boidStates.values()),
-                new SimulationMetrics(boidRefs.size(), fps, now - cmd.tick())
+                new BoidsMetrics(boidRefs.size(), fps, now - cmd.tick())
             ));
         }
         completedBoids = 0;

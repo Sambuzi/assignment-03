@@ -1,7 +1,7 @@
 package pcd.protocol;
 
 import pcd.model.BoidState;
-import pcd.model.SimulationMetrics;
+import pcd.model.BoidsMetrics;
 
 import java.util.List;
 
@@ -41,7 +41,7 @@ public interface GUIProtocol {
      * @param boids the list of boid states to render
      * @param metrics the simulation metrics to display
      */
-    record RenderFrame(List<BoidState> boids, SimulationMetrics metrics) implements Command {}
+    record RenderFrame(List<BoidState> boids, BoidsMetrics metrics) implements Command {}
 
     /**
      * Command to update the weights for the boid behaviors.
