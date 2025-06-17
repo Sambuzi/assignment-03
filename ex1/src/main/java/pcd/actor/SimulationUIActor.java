@@ -7,9 +7,8 @@ import pcd.view.*;
 
 import javax.swing.*;
 import javax.swing.event.*;
-import java.util.*;
 
-public class GUIActor implements ChangeListener {
+public class SimulationUIActor implements ChangeListener {
     private final ActorRef<ManagerProtocol.Command> managerActor;
     private final BoidsParams boidsParams;
 
@@ -18,7 +17,7 @@ public class GUIActor implements ChangeListener {
     private boolean isRunning = false;
     private boolean waitingForConfirmation = false;
 
-    private GUIActor(BoidsParams boidsParams, ActorRef<ManagerProtocol.Command> managerActor) {
+    private SimulationUIActor(BoidsParams boidsParams, ActorRef<ManagerProtocol.Command> managerActor) {
         this.boidsParams = boidsParams;
         this.managerActor = managerActor;
 
@@ -96,7 +95,7 @@ public class GUIActor implements ChangeListener {
     public static Behavior<GUIProtocol.Command> create(BoidsParams boidsParams,
                                                        ActorRef<ManagerProtocol.Command> managerActor) {
         return Behaviors.setup(ctx ->
-                Behaviors.supervise(new GUIActor(boidsParams, managerActor).behavior())
+                Behaviors.supervise(new SimulationUIActor(boidsParams, managerActor).behavior())
                         .onFailure(SupervisorStrategy.restart()));
     }
 
