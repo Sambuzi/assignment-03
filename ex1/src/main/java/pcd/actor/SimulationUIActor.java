@@ -140,6 +140,13 @@ private void createMainGUI() {
         isPaused = true;
         setWaitingState(false);
         updateButtonStates();
+        SwingUtilities.invokeLater(() -> {
+            if (gui != null) {
+                gui.getCohesionSlider().setEnabled(false);
+                gui.getSeparationSlider().setEnabled(false);
+                gui.getAlignmentSlider().setEnabled(false);
+            }
+        });
         return Behaviors.same();
     }
 
@@ -147,6 +154,13 @@ private void createMainGUI() {
         isPaused = false;
         setWaitingState(false);
         updateButtonStates();
+        SwingUtilities.invokeLater(() -> {
+            if (gui != null) {
+                gui.getCohesionSlider().setEnabled(true);
+                gui.getSeparationSlider().setEnabled(true);
+                gui.getAlignmentSlider().setEnabled(true);
+            }
+        });
         return Behaviors.same();
     }
 
@@ -175,15 +189,7 @@ private void createMainGUI() {
         if (!waitingForConfirmation && gui != null) {
             double sep = gui.getSeparationSlider().getValue() * 0.1;
             double coh = gui.getCohesionSlider().getValue() * 0.1;
-            double ali = gui.getAlignmentSlider().getValue() * 0.1;
-
-            SwingUtilities.invokeLater(() -> {
-                gui.getCohesionSlider().setEnabled(false);
-                gui.getSeparationSlider().setEnabled(false);
-                gui.getAlignmentSlider().setEnabled(false);
-            });
-
-            managerActor.tell(new ManagerProtocol.UpdateParams(coh, ali, sep));
+            double ali = gui.getAlignmentSlider().getValue() * 0.1;         managerActor.tell(new ManagerProtocol.UpdateParams(coh, ali, sep));
         }
     }
 }
