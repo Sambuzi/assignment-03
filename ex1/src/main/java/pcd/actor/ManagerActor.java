@@ -144,7 +144,10 @@ public class ManagerActor {
 
     private Behavior<ManagerProtocol.Command> onPause(ManagerProtocol.PauseSimulation msg) {
         timers.cancel(new ManagerProtocol.Tick());
-        if (guiActor != null) guiActor.tell(new GUIProtocol.ConfirmPause());
+        if (guiActor != null) {
+            guiActor.tell(new GUIProtocol.ConfirmPause());
+            guiActor.tell(new GUIProtocol.UpdateStatus(GUIProtocol.SimulationStatus.PAUSED)); // <--- AGGIUNGI QUESTA RIGA
+        }
         return paused();
     }
     
@@ -160,15 +163,27 @@ public class ManagerActor {
     private Behavior<ManagerProtocol.Command> onResume(ManagerProtocol.ResumeSimulation msg) {
         completedBoids = 0;
         timers.startTimerAtFixedRate(new ManagerProtocol.Tick(), Duration.ofMillis(TICK_MS));
-        if (guiActor != null) guiActor.tell(new GUIProtocol.ConfirmResume());
+        if (guiActor != null) {
+            guiActor.tell(new GUIProtocol.ConfirmResume());
+            guiActor.tell(new GUIProtocol.UpdateStatus(GUIProtocol.SimulationStatus.RUNNING)); // <--- AGGIUNGI QUESTA RIGA
+        }
         return running();
     }
 
     private Behavior<ManagerProtocol.Command> onStop(ManagerProtocol.StopSimulation msg) {
         timers.cancelAll();
-        if (guiActor != null) guiActor.tell(new GUIProtocol.ConfirmStop());
+        if (guiActor != null) {
+            guiActor.tell(new GUIProtocol.UpdateStatus(GUIProtocol.SimulationStatus.STOPPED)); // Mostra STOPPED subito
+        }
         boidRefs.values().forEach(ctx::stop);
-        if (guiActor != null) ctx.stop(guiActor);
+
+        // Dopo 2 secondi invia la conferma di stop alla GUI
+        ctx.scheduleOnce(
+            java.time.Duration.ofSeconds(2),
+            guiActor,
+            new GUIProtocol.ConfirmStop()
+        );
+
         return idle();
     }
 }
