@@ -1,6 +1,5 @@
 package pcd.view;
 
-import pcd.actor.SimulationUIActor;
 import pcd.model.BoidState;
 
 import javax.swing.*;

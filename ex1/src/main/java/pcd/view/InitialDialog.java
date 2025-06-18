@@ -15,7 +15,7 @@ public class InitialDialog extends JDialog {
         inputPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         JLabel label = new JLabel("Number of Boids:");
-        JTextField boidsField = new JTextField("1000");
+        JTextField boidsField = new JTextField("500");
 
         inputPanel.add(label);
         inputPanel.add(boidsField);
