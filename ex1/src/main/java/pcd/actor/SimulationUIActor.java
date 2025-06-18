@@ -20,42 +20,38 @@ public class SimulationUIActor implements ChangeListener {
     private SimulationUIActor(BoidsParams boidsParams, ActorRef<ManagerProtocol.Command> managerActor) {
         this.boidsParams = boidsParams;
         this.managerActor = managerActor;
-
-        SwingUtilities.invokeLater(this::showInitialDialog);
+        SwingUtilities.invokeLater(this::createMainGUI);
     }
 
-    private void showInitialDialog() {
-        JFrame parentFrame = new JFrame();
-        parentFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        InitialDialog dialog = new InitialDialog(parentFrame);
-        if (dialog.showDialog()) {
-            int nBoids = dialog.getNBoids();
-            parentFrame.dispose();
-
-            SwingUtilities.invokeLater(() -> createMainGUI(nBoids));
-            managerActor.tell(new ManagerProtocol.StartSimulation(
-                    nBoids,
-                    boidsParams.getWidth(),
-                    boidsParams.getHeight()
-            ));
-            isRunning = true;
-            isPaused = false;
-            updateButtonStates();
-        } else {
-            System.exit(0);
-        }
-    }
-
-    private void createMainGUI(int nBoids) {
+private void createMainGUI() {
+    if (gui == null) {
         gui = new BoidsGUI(
             (int) boidsParams.getWidth(),
             (int) boidsParams.getHeight(),
-            nBoids,
+            500, // valore di default
+            this::onStartSimulation,
             action -> onPauseResume(),
             action -> onStop(),
             this
         );
+    } else {
+        SwingUtilities.invokeLater(() -> {
+            gui.showConfigPanel();
+            gui.getFrame().setVisible(true); // Riporta in primo piano la finestra
+        });
+    }
+    updateButtonStates();
+}
+
+
+    private void onStartSimulation(int nBoids) {
+        managerActor.tell(new ManagerProtocol.StartSimulation(
+            nBoids,
+            boidsParams.getWidth(),
+            boidsParams.getHeight()
+        ));
+        isRunning = true;
+        isPaused = false;
         updateButtonStates();
     }
 
@@ -158,8 +154,15 @@ public class SimulationUIActor implements ChangeListener {
         isRunning = false;
         setWaitingState(false);
         updateButtonStates();
+
+        if (gui != null) {
+            gui.getFrame().dispose();  // <--- chiude la finestra esistente
+            gui = null;                // facoltativo, libera memoria
+        }
+
         return Behaviors.same();
     }
+
 
     private Behavior<GUIProtocol.Command> onConfirmParamsUpdate(GUIProtocol.ConfirmParamsUpdate msg) {
         setWaitingState(false);
