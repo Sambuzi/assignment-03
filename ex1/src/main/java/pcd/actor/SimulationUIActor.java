@@ -173,10 +173,6 @@ private void createMainGUI() {
             gui.getFrame().dispose();
             gui = null;
         }
-
-        // NON ricreare subito la GUI qui!
-        // Se vuoi far ripartire la simulazione, fallo solo su richiesta dell'utente (ad esempio, riavviando il programma o mostrando un pulsante "Nuova simulazione").
-
         return Behaviors.same();
     }
 
