@@ -5,40 +5,43 @@ import pcd.model.*;
 
 import java.util.List;
 
-/**
- * Protocol for Boid actors in the Boids simulation.
- * Defines commands for updating boid states, retrieving neighbors, and getting the state of a boid.
- */
 public interface BoidProtocol {
 
-    /**
-     * Command interface for Boid actors.
-     * All commands sent to Boid actors must implement this interface.
-     */
     interface Command {}
 
-    /**
-     * Response interface for Boid actors.
-     * All responses from Boid actors must implement this interface.
-     *
-     * @param tick the current tick of the simulation
-     * @param boids the list of boid states
-     */
-    record UpdateRequest(long tick, List<BoidState> boids) implements Command {
+    // UpdateRequest
+    class UpdateRequest implements Command {
+        private final long tick;
+        private final List<BoidState> boids;
+
+        public UpdateRequest(long tick, List<BoidState> boids) {
+            this.tick = tick;
+            this.boids = boids;
+        }
+
+        public long tick() { return tick; }
+        public List<BoidState> boids() { return boids; }
     }
 
-    /**
-     * Command to wait for an update from the Manager actor.
-     *
-     * @param tick the current tick of the simulation
-     */
-    record WaitUpdateRequest(long tick) implements Command {}
+    // WaitUpdateRequest
+    class WaitUpdateRequest implements Command {
+        private final long tick;
 
-    /**
-     * Command to update the params for updating position of boids storm.
-     *
-     * @param params the new parameters for the updating logic
-     */
-    record UpdateParams(BoidsParams params) implements Command {
+        public WaitUpdateRequest(long tick) {
+            this.tick = tick;
+        }
+
+        public long tick() { return tick; }
+    }
+
+    // UpdateParams
+    class UpdateParams implements Command {
+        private final BoidsParams params;
+
+        public UpdateParams(BoidsParams params) {
+            this.params = params;
+        }
+
+        public BoidsParams params() { return params; }
     }
 }

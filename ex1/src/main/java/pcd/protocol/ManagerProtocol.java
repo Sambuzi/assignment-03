@@ -4,8 +4,8 @@ import pcd.utils.P2d;
 import pcd.utils.V2d;
 
 /**
- * Protocol for Manager actor that control simulation.
- * This protocol defines the commands that can be sent to the Manager actor
+ * Protocol for Manager actor that controls the simulation.
+ * This protocol defines the commands that can be sent to the Manager actor.
  */
 public interface ManagerProtocol {
 
@@ -13,59 +13,91 @@ public interface ManagerProtocol {
 
     /**
      * Start the simulation.
-     *
-     * @param nBoids the number of boids to simulate
-     * @param width the width of the simulation area
-     * @param height the height of the simulation area
      */
-    record StartSimulation(int nBoids, double width, double height) implements Command {}
+    class StartSimulation implements Command {
+        private final int nBoids;
+        private final double width;
+        private final double height;
+
+        public StartSimulation(int nBoids, double width, double height) {
+            this.nBoids = nBoids;
+            this.width = width;
+            this.height = height;
+        }
+
+        public int nBoids() { return nBoids; }
+        public double width() { return width; }
+        public double height() { return height; }
+    }
 
     /**
      * Stop the simulation.
      */
-    record StopSimulation() implements Command {}
+    class StopSimulation implements Command {}
 
     /**
      * Pause the simulation.
-     * This command is used to pause the simulation without stopping it completely.
-     * It allows the simulation to be resumed later.
      */
-    record PauseSimulation() implements Command {}
+    class PauseSimulation implements Command {}
 
     /**
      * Resume the simulation.
      */
-    record ResumeSimulation() implements Command {}
-
+    class ResumeSimulation implements Command {}
 
     /**
-     * Command to update the parameters of the simulation, setted by user from GUI.
-     *
-     * @param cohesion cohesion factor
-     * @param alignment alignment factor
-     * @param separation separation factor
+     * Command to update the parameters of the simulation, set by user from GUI.
      */
-    record UpdateParams(double cohesion, double alignment, double separation) implements Command {}
+    class UpdateParams implements Command {
+        private final double cohesion;
+        private final double alignment;
+        private final double separation;
+
+        public UpdateParams(double cohesion, double alignment, double separation) {
+            this.cohesion = cohesion;
+            this.alignment = alignment;
+            this.separation = separation;
+        }
+
+        public double cohesion() { return cohesion; }
+        public double alignment() { return alignment; }
+        public double separation() { return separation; }
+    }
 
     /**
      * Tick command to update the simulation state.
      */
-    record Tick() implements Command {}
+    class Tick implements Command {}
 
     /**
      * Command to notify that the update for the current tick is completed.
-     * This command is sent to the Manager actor when all boids have completed their updates for the current tick.
-     *
-     * @param tick the current tick of the simulation
      */
-    record UpdateCompleted(long tick) implements Command {}
+    class UpdateCompleted implements Command {
+        private final long tick;
+
+        public UpdateCompleted(long tick) {
+            this.tick = tick;
+        }
+
+        public long tick() { return tick; }
+    }
 
     /**
      * Command to update the position and velocity of a boid.
-     *
-     * @param position the new position of the boid
-     * @param velocity the new velocity of the boid
-     * @param boidId the unique identifier of the boid
      */
-    record BoidUpdated(P2d position, V2d velocity, String boidId) implements Command {}
+    class BoidUpdated implements Command {
+        private final P2d position;
+        private final V2d velocity;
+        private final String boidId;
+
+        public BoidUpdated(P2d position, V2d velocity, String boidId) {
+            this.position = position;
+            this.velocity = velocity;
+            this.boidId = boidId;
+        }
+
+        public P2d position() { return position; }
+        public V2d velocity() { return velocity; }
+        public String boidId() { return boidId; }
+    }
 }

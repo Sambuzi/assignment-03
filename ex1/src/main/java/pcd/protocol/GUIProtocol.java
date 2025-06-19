@@ -5,15 +5,8 @@ import pcd.model.BoidsMetrics;
 
 import java.util.List;
 
-/**
- * Protocol for the GUI in the Boids simulation.
- * Defines commands for rendering frames and updating weights.
- */
 public interface GUIProtocol {
 
-    /**
-     * Enum representing possible simulation states.
-     */
     enum SimulationStatus {
         STARTING("Starting..."),
         RUNNING("Running"),
@@ -34,51 +27,57 @@ public interface GUIProtocol {
 
     interface Command {}
 
-    /**
-     * Command to render a frame in the GUI.
-     * Contains the list of boids and the simulation metrics.
-     *
-     * @param boids the list of boid states to render
-     * @param metrics the simulation metrics to display
-     */
-    record RenderFrame(List<BoidState> boids, BoidsMetrics metrics) implements Command {}
+    // RenderFrame
+    class RenderFrame implements Command {
+        private final List<BoidState> boids;
+        private final BoidsMetrics metrics;
 
-    /**
-     * Command to update the weights for the boid behaviors.
-     * This command is sent from the GUI to adjust the weights for separation, alignment, and cohesion.
-     *
-     * @param separationWeight the weight for separation behavior
-     * @param alignmentWeight the weight for alignment behavior
-     * @param cohesionWeight the weight for cohesion behavior
-     */
-    record UpdateWeights(double separationWeight,
-                         double alignmentWeight,
-                         double cohesionWeight) implements Command {}
+        public RenderFrame(List<BoidState> boids, BoidsMetrics metrics) {
+            this.boids = boids;
+            this.metrics = metrics;
+        }
 
-    /**
-     * Confirmation that simulation has been paused.
-     */
-    record ConfirmPause() implements Command {}
+        public List<BoidState> boids() { return boids; }
+        public BoidsMetrics metrics() { return metrics; }
+    }
 
-    /**
-     * Confirmation that simulation has been resumed.
-     */
-    record ConfirmResume() implements Command {}
+    // UpdateWeights
+    class UpdateWeights implements Command {
+        private final double separationWeight;
+        private final double alignmentWeight;
+        private final double cohesionWeight;
 
-    /**
-     * Confirmation that simulation has been stopped.
-     */
-    record ConfirmStop() implements Command {}
+        public UpdateWeights(double separationWeight, double alignmentWeight, double cohesionWeight) {
+            this.separationWeight = separationWeight;
+            this.alignmentWeight = alignmentWeight;
+            this.cohesionWeight = cohesionWeight;
+        }
 
-    /**
-     * Confirmation that parameters have been updated.
-     */
-    record ConfirmParamsUpdate() implements Command {}
+        public double separationWeight() { return separationWeight; }
+        public double alignmentWeight() { return alignmentWeight; }
+        public double cohesionWeight() { return cohesionWeight; }
+    }
 
-    /**
-     * Update GUI with current simulation status.
-     *
-     * @param status the current status (RUNNING, PAUSED, STOPPED, etc.)
-     */
-    record UpdateStatus(SimulationStatus status) implements Command {}
+    // ConfirmPause
+    class ConfirmPause implements Command {}
+
+    // ConfirmResume
+    class ConfirmResume implements Command {}
+
+    // ConfirmStop
+    class ConfirmStop implements Command {}
+
+    // ConfirmParamsUpdate
+    class ConfirmParamsUpdate implements Command {}
+
+    // UpdateStatus
+    class UpdateStatus implements Command {
+        private final SimulationStatus status;
+
+        public UpdateStatus(SimulationStatus status) {
+            this.status = status;
+        }
+
+        public SimulationStatus status() { return status; }
+    }
 }

@@ -173,17 +173,15 @@ public class ManagerActor {
     private Behavior<ManagerProtocol.Command> onStop(ManagerProtocol.StopSimulation msg) {
         timers.cancelAll();
         if (guiActor != null) {
-            guiActor.tell(new GUIProtocol.UpdateStatus(GUIProtocol.SimulationStatus.STOPPED)); // Mostra STOPPED subito
+            guiActor.tell(new GUIProtocol.UpdateStatus(GUIProtocol.SimulationStatus.STOPPED));
+            // Invia la conferma di stop DOPO 2 secondi
+            ctx.scheduleOnce(
+                java.time.Duration.ofSeconds(2),
+                guiActor,
+                new GUIProtocol.ConfirmStop()
+            );
         }
         boidRefs.values().forEach(ctx::stop);
-
-        // Dopo 2 secondi invia la conferma di stop alla GUI
-        ctx.scheduleOnce(
-            java.time.Duration.ofSeconds(2),
-            guiActor,
-            new GUIProtocol.ConfirmStop()
-        );
-
         return idle();
     }
 }

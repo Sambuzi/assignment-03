@@ -30,10 +30,6 @@ public class BoidsPanel extends JPanel {
         repaint();
     }
 
-    public void setFrameRate(int framerate) {
-    	this.framerate = framerate;
-    }
-    
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -50,6 +46,5 @@ public class BoidsPanel extends JPanel {
         
         g.setColor(Color.BLACK);
         g.drawString("Num. Boids: " + nBoids, 10, 25);
-        g.drawString("Framerate: " + framerate, 10, 40);
    }
 }

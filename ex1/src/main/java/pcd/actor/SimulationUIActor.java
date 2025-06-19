@@ -169,10 +169,13 @@ private void createMainGUI() {
         setWaitingState(false);
         updateButtonStates();
 
-        if (gui != null) {
-            gui.getFrame().dispose();  // <--- chiude la finestra esistente
-            gui = null;                // facoltativo, libera memoria
+        if (gui != null && gui.getFrame() != null) {
+            gui.getFrame().dispose();
+            gui = null;
         }
+
+        // NON ricreare subito la GUI qui!
+        // Se vuoi far ripartire la simulazione, fallo solo su richiesta dell'utente (ad esempio, riavviando il programma o mostrando un pulsante "Nuova simulazione").
 
         return Behaviors.same();
     }
