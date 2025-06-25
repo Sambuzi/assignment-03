@@ -46,6 +46,8 @@ class DistributedLocalView(playerId: String) extends MainFrame:
     }
   open()
 
+  def getPlayerId: String = playerId
+  
   def updateWorld(world: World): Unit =
     this.world = world
     repaint()
