@@ -9,7 +9,7 @@ import java.util.List;
 
 public class BoidsPanel extends JPanel {
 
-	private int framerate;
+	//private int framerate;
     private int nBoids;
     private final int envWidth, envHeight;
     private List<BoidState> boids;
