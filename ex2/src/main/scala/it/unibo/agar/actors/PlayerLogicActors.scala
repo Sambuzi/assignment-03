@@ -4,15 +4,12 @@ import akka.actor.typed._
 import akka.actor.typed.scaladsl._
 import akka.util.Timeout
 import scala.util.{Success, Failure}
-import it.unibo.agar.distributed._
+import it.unibo.agar.protocol._
 import it.unibo.agar.model._
 import it.unibo.agar.view.DistributedLocalView
 import it.unibo.agar.GameConfig._
 
 object PlayerLogicActors:
-  private case class ViewUpdateFailed(error: Throwable) extends PlayerActorMessage
-  private case class InitializeComplete(player: Player) extends PlayerActorMessage
-  private case object RegistrationFailed extends PlayerActorMessage
 
   def active(
     context: ActorContext[PlayerActorMessage],

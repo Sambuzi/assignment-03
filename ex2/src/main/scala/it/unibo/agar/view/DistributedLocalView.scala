@@ -7,7 +7,7 @@ import scala.swing._
 import scala.swing.Dialog._
 import javax.swing.SwingUtilities
 
-import it.unibo.agar.distributed.{MoveDirection, PlayerActorMessage, Respawn}
+import it.unibo.agar.protocol.{MoveDirection, PlayerActorMessage, Respawn}
 import it.unibo.agar.model.World
 import it.unibo.agar.GameConfig._
 

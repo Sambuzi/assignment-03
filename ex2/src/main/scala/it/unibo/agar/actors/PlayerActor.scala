@@ -6,17 +6,14 @@ import akka.actor.typed.receptionist._
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.util.Timeout
 import scala.util.{Success, Failure}
-import it.unibo.agar.distributed._
+import it.unibo.agar.protocol._
 import it.unibo.agar.model._
 import it.unibo.agar.view.DistributedLocalView
 import it.unibo.agar.GameConfig._
 
 object PlayerActor:
   val PlayerServiceKey: ServiceKey[PlayerActorMessage] = ServiceKey[PlayerActorMessage]("PlayerActor")
-
-  private case class InitializeComplete(player: Player) extends PlayerActorMessage
-  private case object RegistrationFailed extends PlayerActorMessage
-  private case class ViewUpdateFailed(error: Throwable) extends PlayerActorMessage
+  
 
   def apply(playerId: String, worldManager: ActorRef[WorldManagerMessage], isAI: Boolean = false): Behavior[PlayerActorMessage] =
     Behaviors.setup { context =>

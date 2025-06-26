@@ -3,7 +3,7 @@ package it.unibo.agar.actors
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
 import akka.util.Timeout
-import it.unibo.agar.distributed._
+import it.unibo.agar.protocol._
 import it.unibo.agar.model.World
 import it.unibo.agar.view.GlobalViewFrame
 import it.unibo.agar.GameConfig._

@@ -5,8 +5,8 @@ import akka.actor.typed.scaladsl.*
 import com.typesafe.config.Config
 import scala.util.Random
 import it.unibo.agar.model.Food
-import it.unibo.agar.distributed.{FoodList, FoodManagerMessage, GenerateFood, GetAllFood, RemoveFood}
 import it.unibo.agar.GameConfig._
+import it.unibo.agar.protocol._
 
 /**
  * Actor responsible for managing food in the game world.
