@@ -27,6 +27,7 @@ object PlayerActor:
           }
           Behaviors.receiveMessage {
             case InitializeComplete(player) =>
+              println(s"Player registrato: ${player.id}") // <-- stampa a video
               stash.unstashAll(PlayerLogicActors.active(context, player, None, worldManager, isAI))
             case RegistrationFailed if isAI && retryCount < 3 =>
               Behaviors.withTimers { timers =>
