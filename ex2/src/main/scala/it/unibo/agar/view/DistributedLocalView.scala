@@ -31,16 +31,37 @@ class DistributedLocalView(playerId: String) extends MainFrame:
           .map(p => (p.x - size.width / 2.0, p.y - size.height / 2.0))
           .getOrElse((0.0, 0.0))
         AgarViewUtils.drawWorld(g, world, offsetX, offsetY)
-        // --- DISEGNA LO SCORE ---
+        // --- DISEGNA LO SCORE CON STILE ---
         playerOpt.foreach { player =>
-          g.setColor(java.awt.Color.BLACK)
-          g.drawString(s"Score: ${player.score}", 10, 20)
+          val scoreText = s"Score: ${player.score}"
+          val font = new java.awt.Font("Arial", java.awt.Font.BOLD, 22)
+          g.setFont(font)
+          val metrics = g.getFontMetrics(font)
+          val textWidth = metrics.stringWidth(scoreText)
+          val textHeight = metrics.getHeight
+          val padding = 10
+          val x = 15
+          val y = 35
+
+          // Sfondo semi-trasparente arrotondato
+          val bgColor = new java.awt.Color(255, 255, 255, 180)
+          g.setColor(bgColor)
+          g.fillRoundRect(x - padding, y - textHeight + 5, textWidth + 2 * padding, textHeight + padding / 2, 18, 18)
+
+          // Bordo scuro
+          g.setColor(java.awt.Color.DARK_GRAY)
+          g.drawRoundRect(x - padding, y - textHeight + 5, textWidth + 2 * padding, textHeight + padding / 2, 18, 18)
+
+          // Testo in blu scuro
+          g.setColor(new java.awt.Color(30, 60, 180))
+          g.drawString(scoreText, x, y)
         }
       else
         g.setColor(java.awt.Color.DARK_GRAY)
         g.fillRect(0, 0, size.width, size.height)
         g.setColor(java.awt.Color.WHITE)
-        g.drawString("Waiting for respawn...", size.width / 2 - 60, size.height / 2)
+        g.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 24))
+        g.drawString("Waiting for respawn...", size.width / 2 - 100, size.height / 2)
 
     reactions += { case e: event.MouseMoved =>
       if isActive then
@@ -83,6 +104,91 @@ class DistributedLocalView(playerId: String) extends MainFrame:
         case _ =>
           dispose()
           System.exit(0)
+    })
+
+  def showMatchResultsAndRespawn(): Unit =
+    SwingUtilities.invokeLater(() => {
+      isActive = false
+      repaint()
+
+      val playerOpt = world.players.find(_.id == playerId)
+      val score = playerOpt.map(_.score).getOrElse(0)
+      val foodEaten = score
+      val cellsEaten = 0 // migliora se vuoi
+      val timeAlive = "N/A"
+
+      val titleLabel = new Label("Match Results") {
+        font = new Font("Arial", java.awt.Font.BOLD, 20)
+        horizontalAlignment = Alignment.Center
+      }
+      val foodLabel = new Label(s"Food eaten: $foodEaten") {
+        font = new Font("Arial", java.awt.Font.PLAIN, 14)
+        horizontalAlignment = Alignment.Center
+      }
+      val cellsLabel = new Label(s"Cells eaten: $cellsEaten") {
+        font = new Font("Arial", java.awt.Font.PLAIN, 14)
+        horizontalAlignment = Alignment.Center
+      }
+      val scoreLabel = new Label(s"Score: $score") {
+        font = new Font("Arial", java.awt.Font.PLAIN, 14)
+        horizontalAlignment = Alignment.Center
+      }
+      val timeLabel = new Label(s"Time alive: $timeAlive") {
+        font = new Font("Arial", java.awt.Font.PLAIN, 14)
+        horizontalAlignment = Alignment.Center
+      }
+      val respawnLabel = new Label("Do you want to respawn?") {
+        font = new Font("Arial", java.awt.Font.BOLD, 13)
+        horizontalAlignment = Alignment.Center
+      }
+
+      val resultPanel = new BoxPanel(Orientation.Vertical) {
+        contents += Swing.VStrut(10)
+        contents += titleLabel
+        contents += Swing.VStrut(15)
+        contents += foodLabel
+        contents += cellsLabel
+        contents += scoreLabel
+        contents += timeLabel
+        contents += Swing.VStrut(15)
+        contents += respawnLabel
+        contents += Swing.VStrut(10)
+      }
+
+      val yesButton = new Button("Respawn")
+      val noButton = new Button("Exit")
+
+      val buttonPanel = new FlowPanel(FlowPanel.Alignment.Center)(yesButton, noButton)
+
+      val mainPanel = new BoxPanel(Orientation.Vertical) {
+        contents += resultPanel
+        contents += buttonPanel
+        border = Swing.EmptyBorder(10, 20, 10, 20)
+      }
+
+      val dialog = new Dialog {
+        title = "Match Results"
+        contents = mainPanel
+        size = new Dimension(320, 300)
+        centerOnScreen()
+        modal = true
+        peer.setAlwaysOnTop(true)
+        peer.setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE)
+      }
+
+      listenTo(yesButton, noButton)
+
+      reactions += {
+        case event.ButtonClicked(`yesButton`) =>
+          dialog.close()
+          playerActor.foreach(_ ! Respawn)
+        case event.ButtonClicked(`noButton`) =>
+          dialog.close()
+          dispose()
+          System.exit(0)
+      }
+
+      dialog.open()
     })
 
   override def dispose(): Unit =

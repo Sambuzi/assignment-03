@@ -8,7 +8,7 @@ import scala.swing._
 object Main:
   def main(args: Array[String]): Unit =
     if args.isEmpty then
-      println("Run in default mode or open help menu? (Default: D, Help: H)")
+      println("Run in default mode or open help menu? (Default: D, Help: H) ,then press enter to continue")
       val choice = StdIn.readLine().trim.toUpperCase
 
       choice match
@@ -70,7 +70,7 @@ object Main:
         contents += nameField
         contents += Swing.VStrut(10)
         contents += new FlowPanel:
-          contents += Button("Confirm") {
+          contents += Button("Start game") {
             inputName = nameField.text.trim
             dispose()
           }

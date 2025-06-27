@@ -63,7 +63,7 @@ object PlayerLogicActors:
             waitingForRespawn(context, localView, worldManager, isAI)
           }
         else
-          localView.foreach(_.showRespawnDialog())
+          localView.foreach(_.showMatchResultsAndRespawn())
           waitingForRespawn(context, localView, worldManager, isAI)
 
       case StartAI =>
