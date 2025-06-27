@@ -31,6 +31,11 @@ class DistributedLocalView(playerId: String) extends MainFrame:
           .map(p => (p.x - size.width / 2.0, p.y - size.height / 2.0))
           .getOrElse((0.0, 0.0))
         AgarViewUtils.drawWorld(g, world, offsetX, offsetY)
+        // --- DISEGNA LO SCORE ---
+        playerOpt.foreach { player =>
+          g.setColor(java.awt.Color.BLACK)
+          g.drawString(s"Score: ${player.score}", 10, 20)
+        }
       else
         g.setColor(java.awt.Color.DARK_GRAY)
         g.fillRect(0, 0, size.width, size.height)

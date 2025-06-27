@@ -19,10 +19,14 @@ trait GameStateManager:
 
   def movePlayerDirection(id: String, dx: Double, dy: Double): Unit
 
-case class Player(id: String, x: Double, y: Double, mass: Double) extends Entity:
+case class Player(id: String, x: Double, y: Double, mass: Double, score: Int = 0) extends Entity:
 
   def grow(entity: Entity): Player =
-    copy(mass = mass + entity.mass)
+    val scoreInc = entity match
+      case _: Food   => 1
+      case _: Player => 5
+      //case _         => 0
+    copy(mass = mass + entity.mass, score = score + scoreInc)
 
 case class Food(id: String, x: Double, y: Double, mass: Double = 100.0) extends Entity
 
