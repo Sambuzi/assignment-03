@@ -102,7 +102,7 @@ class DistributedLocalView(playerId: String) extends MainFrame:
       val playerOpt = world.players.find(_.id == playerId)
       val score = playerOpt.map(_.score).getOrElse(0)
       val foodEaten = score
-      val cellsEaten = 0 // migliora se vuoi
+      val cellsEaten = 0
 
       // Calcolo tempo di gioco
       val timeAliveMillis = (endTime - startTime).max(0)

@@ -55,32 +55,48 @@ object Main:
     println("  all                 - Start server + 4 AI + wait for client input (press ENTER to start)")
     println("\nRun from sbt shell to use commands, or run in default mode.")
 
-  private def askPlayerName() : String =
+  private def askPlayerName(): String =
     var inputName = ""
-    val dialog: Dialog = new Dialog:
+    val dialog: Dialog = new Dialog {
       title = "Agar.io - Player Name"
       modal = true
 
-      val nameField: TextField = new TextField(20):
+      val nameField: TextField = new TextField(20) {
         text = "Player1"
+        requestFocusInWindow()
+        selectAll()
+      }
 
-      contents = new BoxPanel(Orientation.Vertical):
-        contents += new Label("Enter name:")
+      val titleLabel = new Label("Enter your player name") {
+        font = new Font("Arial", java.awt.Font.BOLD, 18)
+        horizontalAlignment = Alignment.Center
+      }
+
+      val startButton = new Button(Action("Start game") {
+        inputName = nameField.text.trim
+        dispose()
+      })
+      val cancelButton = new Button(Action("Cancel") {
+        inputName = ""
+        dispose()
+        System.exit(0)
+      })
+ 
+      contents = new BoxPanel(Orientation.Vertical) {
+        contents += Swing.VStrut(10)
+        contents += titleLabel
         contents += Swing.VStrut(10)
         contents += nameField
         contents += Swing.VStrut(10)
-        contents += new FlowPanel:
-          contents += Button("Start game") {
-            inputName = nameField.text.trim
-            dispose()
-          }
-          contents += Button("Cancel") {
-            dispose()
-          }
-        border = Swing.EmptyBorder(10, 10, 10, 10)
+        contents += new FlowPanel(FlowPanel.Alignment.Center)(startButton, cancelButton)
+        border = Swing.EmptyBorder(15, 20, 15, 20)
+      }
 
       centerOnScreen()
       pack()
+      peer.setAlwaysOnTop(true)
+      peer.setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE)
+    }
 
     dialog.open()
     if inputName.isEmpty then "Player1" else inputName
