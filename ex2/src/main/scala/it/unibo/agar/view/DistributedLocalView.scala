@@ -16,6 +16,10 @@ class DistributedLocalView(playerId: String) extends MainFrame:
   private var playerActor: Option[ActorRef[PlayerActorMessage]] = None
   private var isActive = true
 
+  // --- TIMER ---
+  private var startTime: Long = System.currentTimeMillis()
+  private var endTime: Long = 0L
+
   title = s"Agar.io - Local View ($playerId)"
   preferredSize = new Dimension(WindowSize, WindowSize)
 
@@ -85,37 +89,26 @@ class DistributedLocalView(playerId: String) extends MainFrame:
     isActive = active
     repaint()
 
-  def showRespawnDialog(): Unit =
-    SwingUtilities.invokeLater(() => {
-      isActive = false
-      repaint()
-      
-      val result = showConfirmation(
-        this,
-        "\nDo you want to respawn?",
-        "Game Over",
-        Options.YesNo,
-        Message.Question
-      )
-      
-      result match
-        case Result.Yes =>
-          playerActor.foreach(_ ! Respawn)
-        case _ =>
-          dispose()
-          System.exit(0)
-    })
+  // --- CHIAMA QUESTO QUANDO IL PLAYER INIZIA O RESPWNA ---
+  def onPlayerStart(): Unit =
+    startTime = System.currentTimeMillis()
 
   def showMatchResultsAndRespawn(): Unit =
     SwingUtilities.invokeLater(() => {
       isActive = false
       repaint()
 
+      endTime = System.currentTimeMillis()
       val playerOpt = world.players.find(_.id == playerId)
       val score = playerOpt.map(_.score).getOrElse(0)
       val foodEaten = score
       val cellsEaten = 0 // migliora se vuoi
-      val timeAlive = "N/A"
+
+      // Calcolo tempo di gioco
+      val timeAliveMillis = (endTime - startTime).max(0)
+      val seconds = (timeAliveMillis / 1000) % 60
+      val minutes = (timeAliveMillis / 1000) / 60
+      val timeAlive = f"$minutes%02d:$seconds%02d"
 
       val titleLabel = new Label("Match Results") {
         font = new Font("Arial", java.awt.Font.BOLD, 20)
@@ -181,6 +174,7 @@ class DistributedLocalView(playerId: String) extends MainFrame:
       reactions += {
         case event.ButtonClicked(`yesButton`) =>
           dialog.close()
+          onPlayerStart() // resetta il timer!
           playerActor.foreach(_ ! Respawn)
         case event.ButtonClicked(`noButton`) =>
           dialog.close()
